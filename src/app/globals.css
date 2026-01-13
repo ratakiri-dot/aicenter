@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 162 84% 5%;
+  --card: 0 0% 100%;
+  --card-foreground: 162 84% 5%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 162 84% 5%;
+  --primary: 152 100% 20%; /* UNISMA Green */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 48 100% 50%; /* UNISMA Gold */
+  --secondary-foreground: 162 84% 5%;
+  --muted: 162 20% 96%;
+  --muted-foreground: 162 10% 40%;
+  --accent: 152 40% 92%;
+  --accent-foreground: 152 100% 20%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 162 20% 90%;
+  --input: 162 20% 90%;
+  --ring: 152 100% 20%;
+  --radius: 1rem;
+}
+
+.dark {
+  --background: 162 84% 3%;
+  --foreground: 0 0% 100%;
+  --card: 162 84% 4%;
+  --card-foreground: 0 0% 100%;
+  --popover: 162 84% 4%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 152 100% 25%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 48 100% 50%;
+  --secondary-foreground: 162 84% 5%;
+  --muted: 162 40% 10%;
+  --muted-foreground: 162 10% 65%;
+  --accent: 152 50% 15%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 162 40% 15%;
+  --input: 162 40% 15%;
+  --ring: 152 100% 30%;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
