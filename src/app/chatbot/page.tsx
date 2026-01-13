@@ -65,9 +65,28 @@ export default function ChatbotPage() {
             setMessages(prev => [...prev, botMsg]);
         } catch (error: any) {
             console.error("Chat Error:", error);
+
+            // Try to extract the actual error message from the API response
+            let errorMessage = "Maaf, sepertinya UNI sedang sibuk atau ada masalah koneksi.";
+
+            try {
+                const errorData = await error.response?.json();
+                if (errorData?.error) {
+                    errorMessage = `Error: ${errorData.error}`;
+                    if (errorData.details) {
+                        errorMessage += ` (${errorData.details})`;
+                    }
+                }
+            } catch (e) {
+                // If we can't parse the error, use the default message
+                if (error.message) {
+                    errorMessage += ` Detail: ${error.message}`;
+                }
+            }
+
             const errorMsg: Message = {
                 role: "bot",
-                content: "Maaf, sepertinya UNI sedang sibuk atau ada masalah koneksi. Pastikan API Key Gemini sudah terpasang di .env.local.",
+                content: errorMessage,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             setMessages(prev => [...prev, errorMsg]);
