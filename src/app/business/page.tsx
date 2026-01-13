@@ -356,7 +356,7 @@ export default function BusinessPage() {
                                     <div className="p-4 rounded-2xl bg-muted/50 border border-border flex flex-col items-center gap-2 cursor-pointer hover:border-rose-500/50 transition-all border-rose-500/20 bg-rose-500/5">
                                         <ImageIcon className="w-6 h-6 text-rose-500" />
                                         <div className="text-center">
-                                            <div className="text-[10px] font-black uppercase tracking-widest text-rose-500">Premium Flux</div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-rose-500">Premium UNI</div>
                                             <div className="text-[8px] text-rose-400/70 font-bold">Ultra Realistic</div>
                                         </div>
                                     </div>
