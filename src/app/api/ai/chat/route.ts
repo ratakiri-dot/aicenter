@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
 const SYSTEM_PROMPT = `Anda adalah UNI, asisten AI resmi dari LPH (Lembaga Pemeriksa Halal) Universitas Islam Malang (UNISMA). 
 Tugas utama Anda adalah membantu pelaku usaha dan masyarakat mengenai sertifikasi halal di Indonesia sesuai regulasi BPJPH (Badan Penyelenggara Jaminan Produk Halal).
