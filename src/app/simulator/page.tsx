@@ -27,6 +27,21 @@ export default function SimulatorPage() {
                 </div>
             </div>
 
+            {/* Mobile Desktop Recommendation Notice */}
+            <Card className="md:hidden border-blue-500/20 bg-blue-500/5 p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                        <Info className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="font-bold text-blue-700 dark:text-blue-400 text-sm">Rekomendasi Desktop</h3>
+                        <p className="text-xs text-blue-600/80 dark:text-blue-400/80 leading-relaxed">
+                            Untuk pengalaman terbaik, kami sarankan menggunakan perangkat desktop atau laptop. Beberapa elemen kalkulator mungkin tidak ditampilkan dengan sempurna di layar mobile.
+                        </p>
+                    </div>
+                </div>
+            </Card>
+
             <Card className="border-none shadow-2xl overflow-hidden bg-white dark:bg-card/50 backdrop-blur-md relative h-[850px] group transition-all duration-500 hover:shadow-primary/5">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary z-20" />
 

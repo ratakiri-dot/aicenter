@@ -59,8 +59,8 @@ export default function HomePage() {
           Selamat Datang di AI Center LPH UNISMA
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tight text-primary leading-tight">
-          Digitalize Halal <br />
-          <span className="text-secondary bg-clip-text">Certification Information with AI</span>
+          <span className="text-secondary bg-clip-text">AI CENTER</span> <br />
+          LPH UNISMA
         </h1>
         <p className="text-muted-foreground text-xl max-w-3xl mx-auto font-medium">
           Platform AI Center LPH UNISMA untuk mempermudah pelaku usaha dalam memperoleh informasi sertifikasi halal dengan bantuan teknologi AI terkini.

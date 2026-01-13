@@ -50,14 +50,17 @@
     from {
       height: 0;
     }
+
     to {
       height: var(--radix-accordion-content-height);
     }
   }
+
   @keyframes accordion-up {
     from {
       height: var(--radix-accordion-content-height);
     }
+
     to {
       height: 0;
     }
@@ -66,53 +69,57 @@
 
 :root {
   --background: 0 0% 100%;
-  --foreground: 162 84% 5%;
+  --foreground: 152 68% 15%;
   --card: 0 0% 100%;
-  --card-foreground: 162 84% 5%;
+  --card-foreground: 152 68% 15%;
   --popover: 0 0% 100%;
-  --popover-foreground: 162 84% 5%;
-  --primary: 152 100% 20%; /* UNISMA Green */
+  --popover-foreground: 152 68% 15%;
+  --primary: 152 68% 25%;
+  /* LPH UNISMA Official Green #156920 */
   --primary-foreground: 0 0% 100%;
-  --secondary: 48 100% 50%; /* UNISMA Gold */
-  --secondary-foreground: 162 84% 5%;
-  --muted: 162 20% 96%;
-  --muted-foreground: 162 10% 40%;
+  --secondary: 35 100% 50%;
+  /* Gold/Orange Accent */
+  --secondary-foreground: 0 0% 100%;
+  --muted: 152 20% 96%;
+  --muted-foreground: 152 10% 40%;
   --accent: 152 40% 92%;
-  --accent-foreground: 152 100% 20%;
+  --accent-foreground: 152 68% 25%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  --border: 162 20% 90%;
-  --input: 162 20% 90%;
-  --ring: 152 100% 20%;
+  --border: 152 20% 90%;
+  --input: 152 20% 90%;
+  --ring: 152 68% 25%;
   --radius: 1rem;
 }
 
 .dark {
-  --background: 162 84% 3%;
+  --background: 152 68% 5%;
   --foreground: 0 0% 100%;
-  --card: 162 84% 4%;
+  --card: 152 68% 7%;
   --card-foreground: 0 0% 100%;
-  --popover: 162 84% 4%;
+  --popover: 152 68% 7%;
   --popover-foreground: 0 0% 100%;
-  --primary: 152 100% 25%;
+  --primary: 152 68% 30%;
+  /* Lighter for dark mode */
   --primary-foreground: 0 0% 100%;
-  --secondary: 48 100% 50%;
-  --secondary-foreground: 162 84% 5%;
-  --muted: 162 40% 10%;
-  --muted-foreground: 162 10% 65%;
-  --accent: 152 50% 15%;
+  --secondary: 35 100% 50%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 152 40% 12%;
+  --muted-foreground: 152 10% 65%;
+  --accent: 152 50% 18%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
-  --border: 162 40% 15%;
-  --input: 162 40% 15%;
-  --ring: 152 100% 30%;
+  --border: 152 40% 15%;
+  --input: 152 40% 15%;
+  --ring: 152 68% 35%;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
