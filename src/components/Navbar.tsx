@@ -9,7 +9,7 @@ const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Chatbot", href: "/chatbot", icon: MessageSquare },
   { name: "Voice AI", href: "/voice", icon: Phone },
-  { name: "Halal Search", href: "/search", icon: Search },
+  { name: "Analisis Bahan", href: "/search", icon: Search },
   { name: "Simulator", href: "/simulator", icon: Calculator },
   { name: "Business", href: "/business", icon: Sparkles },
 ];
