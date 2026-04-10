@@ -6,6 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 const PUBLIC_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/13aFq17smTHLDvNEK7Tm6alIHRvNYYzh77ukRCe9oeTE/export?format=csv";
+const PUBLIC_DOC_TXT_URL = "https://docs.google.com/document/d/1JqbBEWC38N0W62WDzNMvb1MqStmz19EAmEEOnB1ddkc/export?format=txt";
 
 const BASE_SYSTEM_PROMPT = `Anda adalah UNI, asisten AI resmi dari LPH (Lembaga Pemeriksa Halal) Universitas Islam Malang (UNISMA). 
 Tugas utama Anda adalah membantu pelaku usaha dan masyarakat mengenai sertifikasi halal di Indonesia sesuai regulasi BPJPH (Badan Penyelenggara Jaminan Produk Halal).
@@ -78,8 +79,22 @@ export async function POST(req: Request) {
             mitraDataText += "[Peringatan: Gagal terhubung ke database mitra saat ini]\n";
         }
 
+        // 2. Fetch data from Public Google Doc
+        let docDataText = "";
+        try {
+            const docRes = await fetch(PUBLIC_DOC_TXT_URL, { cache: "no-store" });
+            if (!docRes.ok) throw new Error(`HTTP ${docRes.status}`);
+            let text = await docRes.text();
+            // Hilangkan BOM jika ada, dan trim
+            text = text.replace(/^\uFEFF/, '').trim();
+            docDataText = "\nREFERENSI MATERI (DARI GOOGLE DOCS):\n" + text + "\n";
+        } catch (error) {
+            console.error("Failed to fetch from Google Doc:", error);
+            docDataText = "\n[Peringatan: Gagal mengambil referensi tambahan dari Google Docs]\n";
+        }
+
         // Combine prompt
-        const finalSystemPrompt = BASE_SYSTEM_PROMPT + "\n\n" + mitraDataText;
+        const finalSystemPrompt = BASE_SYSTEM_PROMPT + docDataText + "\n\n" + mitraDataText;
 
         // Convert messages to Gemini format
         const history = messages.slice(0, -1).map((m: any) => ({
