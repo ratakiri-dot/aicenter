@@ -70,42 +70,17 @@ export default function SearchPage() {
 
             {/* Smart Search Tabs */}
             <Tabs defaultValue="id-check" className="w-full max-w-3xl mx-auto" onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 h-auto md:h-16 bg-white dark:bg-card border-2 border-primary/10 rounded-2xl md:rounded-[2rem] p-1 mb-6 gap-1 md:gap-0">
-                    <TabsTrigger value="id-check" className="rounded-xl md:rounded-2xl py-3 md:py-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-bold flex items-center justify-center gap-2">
+                <TabsList className="grid w-full grid-cols-2 h-16 bg-white dark:bg-card border-2 border-primary/10 rounded-[2rem] p-1 mb-6">
+                    <TabsTrigger value="id-check" className="rounded-2xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-bold flex items-center gap-2">
                         <PackageSearch className="w-5 h-5" />
                         Cek ID Halal
                     </TabsTrigger>
-                    <TabsTrigger value="analyze" className="rounded-xl md:rounded-2xl py-3 md:py-0 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground font-bold flex items-center justify-center gap-2">
+                    <TabsTrigger value="analyze" className="rounded-2xl data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground font-bold flex items-center gap-2">
                         <Microscope className="w-5 h-5" />
                         Analisis Bahan
                     </TabsTrigger>
-                    <TabsTrigger value="bpjph-embed" className="rounded-xl md:rounded-2xl py-3 md:py-0 data-[state=active]:bg-green-600 data-[state=active]:text-white font-bold flex items-center justify-center gap-2">
-                        <Search className="w-5 h-5" />
-                        Live BPJPH
-                    </TabsTrigger>
                 </TabsList>
 
-                {activeTab === "bpjph-embed" ? (
-                    <div className="w-full relative mt-4 flex flex-col items-center animate-in fade-in zoom-in-95">
-                        <div className="w-full max-w-[900px] overflow-hidden rounded-[2rem] border-4 border-green-500/20 shadow-2xl relative bg-slate-50" style={{ height: '300px' }}>
-                            {/* Teknik Cropping CSS untuk menampilkan HANYA bagian form pencarian BPJPH */}
-                            <div className="absolute w-[1200px] h-[800px]" style={{ top: '-380px', left: '50%', transform: 'translateX(-50%) scale(0.9)', transformOrigin: 'top center' }}>
-                                <iframe 
-                                    src="https://bpjph.halal.go.id/" 
-                                    className="w-full h-full border-none pointer-events-auto"
-                                    scrolling="no"
-                                    title="Cek BPJPH Halal"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-green-500/10 text-green-700">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <p className="text-xs font-bold uppercase tracking-widest">
-                                Di-embed & di-crop langsung dari bpjph.halal.go.id
-                            </p>
-                        </div>
-                    </div>
-                ) : (
                 <div className="relative">
                     <div className="flex gap-2 p-2 bg-white dark:bg-card border-2 border-primary/20 rounded-[2rem] shadow-2xl focus-within:border-primary transition-all group overflow-hidden">
                         <div className="flex items-center pl-4 text-muted-foreground group-focus-within:text-primary transition-colors">
@@ -150,11 +125,9 @@ export default function SearchPage() {
                         </div>
                     )}
                 </div>
-                )}
             </Tabs>
 
             {/* Results Area */}
-            {activeTab !== "bpjph-embed" && (
             <div className="min-h-[300px] flex flex-col gap-8">
                 {error && (
                     <Card className="border-destructive/20 bg-destructive/5 p-6 rounded-[2rem] animate-in fade-in slide-in-from-top-2">
@@ -368,7 +341,6 @@ export default function SearchPage() {
                     </div>
                 )}
             </div>
-            )}
 
             <style jsx>{`
                 @keyframes shimmer {
