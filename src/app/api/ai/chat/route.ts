@@ -60,8 +60,8 @@ export async function POST(req: Request) {
                     const nama = row["NAMA"] || "Tanpa Nama";
                     const merk = row["MERK"] || "Tanpa Merk";
                     const status = row["STATUS PERMOHONAN"] || "Status Tidak Diketahui";
-                    // Try different possibilities for the ID column header due to slight variations possibility
-                    const noSertifikat = row["NO SERTIFIKAT"] || row["NO SERTIFIKA"] || "-";
+                    // Match the exact column head "NO SERTIFIKASI HALAL" from the CSV
+                    const noSertifikat = row["NO SERTIFIKASI HALAL"] || row["NO SERTIFIKAT"] || "-";
 
                     // Format output like the hardcoded string before
                     mitraDataText += `${index + 1}. ${merk} (${nama}). Status: ${status}`;
