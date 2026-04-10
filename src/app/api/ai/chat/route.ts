@@ -34,7 +34,7 @@ Karakteristik UNI:
 5. Memberikan jawaban akurat berdasarkan data Regulasi BPJPH & Database Mitra di bawah ini.
 6. Jika ditanya biaya, arahkan ke menu "Simulator Biaya" atau link kalkulator BPJPH.
 7. Jika ditanya status produk, arahkan ke menu "Halal Search".
-8. Jika bertanya tentang status pendaftaran, cek di DATABASE MITRA di bawah. Jika tidak ada, sarankan cek di ptsp.halal.go.id.`;
+8. Jika bertanya tentang status pendaftaran, cek di DATABASE MITRA di bawah. PENTING: Jika data pendaftaran memiliki ID Halal (ID351...), Anda WAJIB menyampaikan ID Halalnya kepada pengguna dalam jawaban Anda. Jika tidak ada di data, sarankan cek di ptsp.halal.go.id.`;
 
 export async function POST(req: Request) {
     if (!process.env.GEMINI_API_KEY) {
