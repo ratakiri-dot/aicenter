@@ -53,6 +53,16 @@ export default function ChatbotPage() {
                 body: JSON.stringify({ messages: updatedMessages }),
             });
 
+            if (res.status === 429) {
+                const errorMsg: Message = {
+                    role: "bot",
+                    content: "⏳ **Batas Penggunaan Tercapai**\nMaaf, sistem sedang sibuk karena banyaknya permintaan. Mohon tunggu beberapa saat sebelum mengirim pesan lagi.",
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                setMessages(prev => [...prev, errorMsg]);
+                return;
+            }
+
             const data = await res.json();
 
             if (data.error) throw new Error(data.error);
@@ -70,18 +80,12 @@ export default function ChatbotPage() {
             let errorMessage = "Maaf, sepertinya UNI sedang sibuk atau ada masalah koneksi.";
 
             try {
-                const errorData = await error.response?.json();
-                if (errorData?.error) {
-                    errorMessage = `Error: ${errorData.error}`;
-                    if (errorData.details) {
-                        errorMessage += ` (${errorData.details})`;
-                    }
+                // If it's not a standard fetch error instance, check manual response
+                if (error.message && error.message.includes("429")) {
+                    errorMessage = "⏳ **Antrian Penuh**. Mohon tunggu 1 menit lalu coba lagi.";
                 }
             } catch (e) {
-                // If we can't parse the error, use the default message
-                if (error.message) {
-                    errorMessage += ` Detail: ${error.message}`;
-                }
+                // fallback
             }
 
             const errorMsg: Message = {

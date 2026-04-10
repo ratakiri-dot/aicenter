@@ -1,10 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import Papa from "papaparse";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-const SYSTEM_PROMPT = `Anda adalah UNI, asisten AI resmi dari LPH (Lembaga Pemeriksa Halal) Universitas Islam Malang (UNISMA). 
+const PUBLIC_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/13aFq17smTHLDvNEK7Tm6alIHRvNYYzh77ukRCe9oeTE/export?format=csv";
+
+const BASE_SYSTEM_PROMPT = `Anda adalah UNI, asisten AI resmi dari LPH (Lembaga Pemeriksa Halal) Universitas Islam Malang (UNISMA). 
 Tugas utama Anda adalah membantu pelaku usaha dan masyarakat mengenai sertifikasi halal di Indonesia sesuai regulasi BPJPH (Badan Penyelenggara Jaminan Produk Halal).
 
 INFORMASI PENTING LPH UNISMA (Gunakan sebagai referensi utama):
@@ -23,33 +26,15 @@ LINK PENTING:
 - Cek Bahan/ID Halal: bpjph.halal.go.id
 - Konsultasi: wa.me/6282142903454
 
-DATABASE MITRA TERBARU (Data Snapshot):
-Gunakan data ini jika pengguna bertanya tentang status sertifikasi spesifik. Jika data tidak ditemukan, minta nomor pendaftaran.
-1. QUEEN COLA (Eko Yudo Prasetyo) - Pasuruan. Status: TERBIT SH (ID35110021032890824).
-2. Kopi Si Kuning (Suharsoyo) - Mojokerto. Status: BELUM DRAFT.
-3. Kepirik Pisang Bang Joe (Kusmaji) - Mojokerto. Status: BELUM DRAFT.
-4. Rawon Onde (Kurnia Febrianti) - Malang. Status: PENGAJUAN SETELAH HAJI.
-5. Rumah Makan Bu Lanny Kediri (Totok Kuntoro). Status: TERBIT SH (ID35110022513350525).
-6. JACK'S & CO (Lim Putra Jaya) - Malang. Status: TERBIT SH (ID35110024574230725).
-7. KRD ICE TUBE (Achmad Zuhdi) - Sumenep. Status: TERBIT SH (ID35110028015350925).
-8. BAROKAH (Siti Khoiriyah) - Malang. Status: DRAFT PU.
-9. Savana Cakery (CV Tavana Baraka) - Malang. Status: TERBIT SH (ID35110024574190725).
-10. Kapiten (CV Kapiten Nusantara) - Malang. Status: TERBIT SH (ID35110026305570825).
-11. MADU JSR (JSR Madu Bahagia) - Malang. Status: TERBIT SH (ID35210025584660825).
-12. POKANG (Pokang Juara Nusantara) - Malang. Status: TERBIT SH (ID35210026429290825).
-13. HS KOPI (Aan Ainur Rofiq) - Pandaan. Status: TERBIT SH (ID35110039036420126).
-14. ICE FRESH (Achmad Fariz) - Klojen. Status: TERBIT SH (ID35110039152650126).
-15. VALENCIA (Cingthia Dewi Jap) - Purworejo. Status: SEDANG AUDIT.
-
 Karakteristik UNI:
 1. Sapa pengguna baru dengan: "Assalamualaikum Warahmatullah Wabarakatuh".
 2. JANGAN gunakan format Markdown (seperti **tebal**, *miring*, atau # heading). Gunakan teks biasa yang rapi.
 3. Gunakan paragraf dan baris baru untuk keterbacaan, bukan simbol list.
 4. Sopan, profesional, namun ramah.
-5. Memberikan jawaban akurat berdasarkan data di atas & regulasi BPJPH.
+5. Memberikan jawaban akurat berdasarkan data Regulasi BPJPH & Database Mitra di bawah ini.
 6. Jika ditanya biaya, arahkan ke menu "Simulator Biaya" atau link kalkulator BPJPH.
 7. Jika ditanya status produk, arahkan ke menu "Halal Search".
-8. Jika bertanya tentang status pendaftaran, cek di DATABASE MITRA di atas. Jika tidak ada, sarankan cek di ptsp.halal.go.id.`;
+8. Jika bertanya tentang status pendaftaran, cek di DATABASE MITRA di bawah. Jika tidak ada, sarankan cek di ptsp.halal.go.id.`;
 
 export async function POST(req: Request) {
     if (!process.env.GEMINI_API_KEY) {
@@ -59,6 +44,43 @@ export async function POST(req: Request) {
     try {
         const { messages } = await req.json();
 
+        // 1. Fetch data from Public Google Sheet
+        let mitraDataText = "DATABASE MITRA TERBARU (Data Snapshot):\nGunakan data ini jika pengguna bertanya tentang status sertifikasi spesifik. Jika data tidak ditemukan, minta nomor pendaftaran.\n";
+        try {
+            const sheetRes = await fetch(PUBLIC_SHEET_CSV_URL, { cache: "no-store" });
+            if (!sheetRes.ok) throw new Error(`HTTP ${sheetRes.status}`);
+
+            const csvText = await sheetRes.text();
+
+            // Parse CSV directly
+            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+
+            if (parsed.data && parsed.data.length > 0) {
+                parsed.data.forEach((row: any, index: number) => {
+                    const nama = row["NAMA"] || "Tanpa Nama";
+                    const merk = row["MERK"] || "Tanpa Merk";
+                    const status = row["STATUS PERMOHONAN"] || "Status Tidak Diketahui";
+                    // Try different possibilities for the ID column header due to slight variations possibility
+                    const noSertifikat = row["NO SERTIFIKAT"] || row["NO SERTIFIKA"] || "-";
+
+                    // Format output like the hardcoded string before
+                    mitraDataText += `${index + 1}. ${merk} (${nama}). Status: ${status}`;
+                    if (noSertifikat !== "-") {
+                        mitraDataText += ` (ID: ${noSertifikat})`;
+                    }
+                    mitraDataText += "\n";
+                });
+            } else {
+                mitraDataText += "Terjadi kesalahan saat membaca atau data kosong.\n";
+            }
+        } catch (error) {
+            console.error("Failed to fetch/parse from Google sheet:", error);
+            mitraDataText += "[Peringatan: Gagal terhubung ke database mitra saat ini]\n";
+        }
+
+        // Combine prompt
+        const finalSystemPrompt = BASE_SYSTEM_PROMPT + "\n\n" + mitraDataText;
+
         // Convert messages to Gemini format
         const history = messages.slice(0, -1).map((m: any) => ({
             role: m.role === "bot" ? "model" : "user",
@@ -67,7 +89,7 @@ export async function POST(req: Request) {
 
         const chat = model.startChat({
             history: [
-                { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+                { role: "user", parts: [{ text: finalSystemPrompt }] },
                 { role: "model", parts: [{ text: "Baik, saya UNI dari LPH UNISMA. Saya siap membantu Anda." }] },
                 ...history
             ],
@@ -83,9 +105,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ text });
     } catch (error: any) {
         console.error("Gemini API Error (Chat):", error);
+
+        const status = error.status || 500;
+        const message = error.message || "Unknown error in Chat API";
+
         return NextResponse.json({
-            error: error.message || "Unknown error in Chat API",
-            details: error.toLocaleString?.()
-        }, { status: 500 });
+            error: message,
+            details: status === 429 ? "Quota Exceeded. Please try again later." : error.toString()
+        }, { status });
     }
 }
