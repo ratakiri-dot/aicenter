@@ -1,8 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import Papa from "papaparse";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+const PUBLIC_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/13aFq17smTHLDvNEK7Tm6alIHRvNYYzh77ukRCe9oeTE/export?format=csv";
 
 export async function POST(req: Request) {
     if (!process.env.GEMINI_API_KEY) {
@@ -14,20 +17,46 @@ export async function POST(req: Request) {
 
         let prompt = "";
         if (mode === "id-check") {
+            // Fetch dynamically from sheet
+            let mitraDataText = "DATABASE MITRA TERBARU:\nCari apakah query pengguna cocok dengan data di bawah ini.\n";
+            try {
+                const sheetRes = await fetch(PUBLIC_SHEET_CSV_URL, { cache: "no-store" });
+                if (sheetRes.ok) {
+                    const csvText = await sheetRes.text();
+                    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+                    if (parsed.data && parsed.data.length > 0) {
+                        parsed.data.forEach((row: any, index: number) => {
+                            const nama = row["NAMA"] || "Tanpa Nama";
+                            const merk = row["MERK"] || "Tanpa Merk";
+                            const status = row["STATUS PERMOHONAN"] || "Status Tidak Diketahui";
+                            const noSertifikat = row["NO SERTIFIKASI HALAL"] || row["NO SERTIFIKAT"] || "-";
+                            const tglTerbit = row["TANGGAL SH"] || "-";
+
+                            mitraDataText += `${index + 1}. Merek: ${merk}, Pemilik: ${nama}, Status: ${status}, ID: ${noSertifikat}, Tgl: ${tglTerbit}\n`;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Gagal menarik data sheet:", error);
+            }
+
             prompt = `Anda adalah petugas verifikasi sertifikasi halal BPJPH. Tugas Anda adalah memberikan DATA RESMI dari database sertifikasi halal Indonesia untuk: "${query}".
             
+            Jika data yang dicari ADA di ${mitraDataText}, maka gunakan persis data tersebut. Jika tidak ada, Anda boleh mensimulasikannya khusus untuk kasus pencarian general.
+            
             KRITERIA WAJIB:
-            1. Carilah NAMA PRODUSEN/PT YANG SEBENARNYA dari produk tersebut (Contoh: "Indomie" -> "PT Indofood CBP Sukses Makmur Tbk"). JANGAN RANDOM.
-            2. Carilah NOMOR ID HALAL (ID31...) yang terdaftar untuk produk tersebut. Jika Anda tidak memiliki nomor persisnya, berikan nomor ID simulasi yang memiliki format BENAR (ID + 15 angka) dan terlihat resmi. JANGAN KOSONG atau N/A.
-            3. Berikan "Tanggal Terbit" yang akurat atau simulasi realistis (Contoh: "15 Januari 2024").
+            1. Carilah NAMA PRODUSEN/PT YANG SEBENARNYA dari produk tersebut (Untuk data dari sheet, gunakan Pemilik atau nama Merek).
+            2. Carilah NOMOR ID HALAL (ID31...) yang terdaftar untuk produk tersebut. Jika data dari sheet, gunakan ID Halal dari sheet. Jika bukan, berikan nomor simulasi.
+            3. Berikan "Tanggal Terbit" yang akurat dari data sheet atau simulasi realistis jika tidak ada.
+            4. PENTING: Untuk SEMUA yang berasal dari "DATABASE MITRA TERBARU", kolom lphName WAJIB diisi "LPH Universitas Islam Malang" BUKAN LPPOM MUI.
             
             Format Output (JSON):
             {
                 "status": "halal" | "warning" | "haram",
                 "halalId": "NOMOR ID SERTIFIKAT (TIDAK BOLEH N/A)",
                 "analysis": "Penjelasan detail mengenai status kehalalan produk",
-                "producer": "NAMA PT/PERUSAHAAN RESMI (WAJIB)",
-                "lphName": "NAMA LPH/LEMBAGA PEMERIKSA HALAL (Contoh: LPPOM MUI, LPH Kemenag, dll)",
+                "producer": "NAMA PT/PEMILIK",
+                "lphName": "NAMA LPH/LEMBAGA PEMERIKSA HALAL (WAJIB: LPH Universitas Islam Malang khusus data sheet)",
                 "issueDate": "TANGGAL TERBIT (WAJIB)",
                 "recommendation": "Saran verifikasi resmi"
             }
