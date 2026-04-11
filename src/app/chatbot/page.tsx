@@ -18,7 +18,7 @@ export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "bot",
-            content: "Assalamualaikum Warahmatullah Wabarakatuh! Saya UNI, asisten AI khusus LPH UNISMA. Saya dibekali dengan pengetahuan mendalam mengenai regulasi BPJPH 2024, prosedur sertifikasi halal, dan standar audit. Apa yang ingin Anda diskusikan hari ini?",
+            content: "Assalamualaikum Warahmatullah Wabarakatuh! Saya UNI, asisten AI khusus LPH UNISMA. Ada yang bisa kami bantu?",
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
     ]);
