@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardFooter, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Message = {
     role: "bot" | "user";
@@ -161,7 +163,23 @@ export default function ChatbotPage() {
                                                 ? "bg-primary text-primary-foreground rounded-tr-none border-primary/10 font-medium"
                                                 : "bg-white dark:bg-muted border-primary/5 rounded-tl-none text-foreground"
                                         )}>
-                                            {msg.content}
+                                            {msg.role === "bot" ? (
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                        ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                                                        ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                                                        li: ({ children }) => <li className="pl-1">{children}</li>,
+                                                        code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded-md text-xs font-mono">{children}</code>,
+                                                        strong: ({ children }) => <strong className="font-black text-primary/90">{children}</strong>,
+                                                    }}
+                                                >
+                                                    {msg.content}
+                                                </ReactMarkdown>
+                                            ) : (
+                                                <div className="whitespace-pre-wrap">{msg.content}</div>
+                                            )}
                                         </div>
                                         <span className="text-[10px] text-muted-foreground font-black uppercase tracking-tight opacity-60 px-2">{msg.role} • {msg.time}</span>
                                     </div>
