@@ -126,14 +126,16 @@ export async function POST(req: Request) {
 
         if (!text) throw new Error("AI returned an empty response");
 
-        // Simpan ke Google Sheets secara fire-and-forget.
-        // Kegagalan logging TIDAK boleh menggagalkan respons chatbot ke user.
+        // Simpan ke Google Sheets dengan await agar tidak di-freeze oleh Vercel Serverless environment.
+        // Kegagalan logging disabar (caught) agar TIDAK merusak respons chatbot ke user.
         const lastUserMessage = messages[messages.length - 1]?.content ?? "";
-        appendChatHistory({
-            userId,
-            message: lastUserMessage,
-            response: text,
-        }).catch((err) => {
+        try {
+            await appendChatHistory({
+                userId,
+                message: lastUserMessage,
+                response: text,
+            });
+        } catch (err: any) {
             console.error("[GoogleSheets] Gagal menyimpan riwayat chat:", {
                 message: err?.message ?? err,
                 code: err?.code,
@@ -145,7 +147,7 @@ export async function POST(req: Request) {
                     hasSheetId: !!process.env.GOOGLE_SHEET_ID,
                 },
             });
-        });
+        }
 
         return NextResponse.json({ text });
     } catch (error: any) {

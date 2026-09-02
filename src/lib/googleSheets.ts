@@ -19,8 +19,16 @@ function getSheetsClient() {
     );
   }
 
-  // Vercel menyimpan private key dengan literal \n — kita konversi ke newline asli
-  const privateKey = rawPrivateKey.replace(/\\n/g, "\n");
+  let privateKey = rawPrivateKey.trim();
+  // Strip surrounding quotes if the user pasted quotes into Vercel UI
+  if (
+    (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+    (privateKey.startsWith("'") && privateKey.endsWith("'"))
+  ) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  // Convert literal \n strings to real line breaks
+  privateKey = privateKey.replace(/\\n/g, "\n");
 
   const auth = new google.auth.GoogleAuth({
     credentials: {
