@@ -134,7 +134,17 @@ export async function POST(req: Request) {
             message: lastUserMessage,
             response: text,
         }).catch((err) => {
-            console.error("[GoogleSheets] Gagal menyimpan riwayat chat (non-fatal):", err?.message ?? err);
+            console.error("[GoogleSheets] Gagal menyimpan riwayat chat:", {
+                message: err?.message ?? err,
+                code: err?.code,
+                status: err?.status,
+                details: err?.errors ?? err?.response?.data ?? null,
+                envCheck: {
+                    hasEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
+                    hasKey: !!process.env.GOOGLE_PRIVATE_KEY,
+                    hasSheetId: !!process.env.GOOGLE_SHEET_ID,
+                },
+            });
         });
 
         return NextResponse.json({ text });
