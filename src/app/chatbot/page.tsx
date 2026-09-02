@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, Bot, Sparkles, Zap, Trash2, BrainCircuit, ShieldCheck, Info } from "lucide-react";
+import { MessageSquare, Send, Bot, Sparkles, Zap, Trash2, BrainCircuit, ShieldCheck, Info, User, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardFooter, CardContent } from "@/components/ui/card";
@@ -26,7 +26,19 @@ export default function ChatbotPage() {
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [userName, setUserName] = useState<string>("");
+    const [nameInput, setNameInput] = useState<string>("");
+    const [showNameModal, setShowNameModal] = useState<boolean>(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const savedName = localStorage.getItem("uni_chat_username");
+        if (savedName) {
+            setUserName(savedName);
+        } else {
+            setShowNameModal(true);
+        }
+    }, []);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -34,8 +46,23 @@ export default function ChatbotPage() {
         }
     }, [messages, isTyping]);
 
+    const handleSaveName = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const trimmed = nameInput.trim();
+        if (!trimmed) return;
+        localStorage.setItem("uni_chat_username", trimmed);
+        setUserName(trimmed);
+        setShowNameModal(false);
+    };
+
     const handleSend = async () => {
         if (!input.trim()) return;
+
+        // Jika nama belum terisi, tampilkan modal dulu
+        if (!userName.trim()) {
+            setShowNameModal(true);
+            return;
+        }
 
         const userMsg: Message = {
             role: "user",
@@ -52,7 +79,10 @@ export default function ChatbotPage() {
             const res = await fetch("/api/ai/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: updatedMessages }),
+                body: JSON.stringify({
+                    messages: updatedMessages,
+                    userId: userName,
+                }),
             });
 
             if (res.status === 429) {
@@ -119,6 +149,40 @@ export default function ChatbotPage() {
             <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
                 <Card className="flex-1 flex flex-col shadow-2xl border-none overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl rounded-[2.5rem] relative">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary z-20" />
+
+                    {/* Modal Identitas Pengguna */}
+                    {showNameModal && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+                            <div className="bg-white dark:bg-card p-8 rounded-3xl max-w-md w-full shadow-2xl border border-primary/10 space-y-6 animate-in zoom-in-95 duration-300">
+                                <div className="text-center space-y-2">
+                                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
+                                        <User className="w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-primary">Identitas Pengguna</h3>
+                                    <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                                        Silakan masukkan nama atau nama usaha Anda untuk mencatat konsultasi Anda di sistem LPH UNISMA.
+                                    </p>
+                                </div>
+                                <form onSubmit={handleSaveName} className="space-y-4">
+                                    <Input
+                                        autoFocus
+                                        placeholder="Contoh: Ahmad (Resto Padang Jaya)"
+                                        value={nameInput}
+                                        onChange={(e) => setNameInput(e.target.value)}
+                                        className="h-14 rounded-xl border-2 border-primary/20 focus-visible:ring-primary px-4 text-sm"
+                                    />
+                                    <Button
+                                        type="submit"
+                                        disabled={!nameInput.trim()}
+                                        className="w-full h-14 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-sm shadow-lg shadow-primary/20"
+                                    >
+                                        Simpan & Mulai Chat
+                                    </Button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
                     <CardHeader className="bg-primary/5 p-6 flex flex-row items-center justify-between shrink-0 border-b border-primary/5">
                         <div className="flex items-center gap-4">
                             <div className="relative">
@@ -135,10 +199,28 @@ export default function ChatbotPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="hidden md:flex gap-2">
-                            <div className="px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest">
-                                High Accuracy
-                            </div>
+                        <div className="flex items-center gap-2">
+                            {userName ? (
+                                <button
+                                    onClick={() => {
+                                        setNameInput(userName);
+                                        setShowNameModal(true);
+                                    }}
+                                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-all cursor-pointer"
+                                    title="Klik untuk mengubah nama"
+                                >
+                                    <User className="w-3.5 h-3.5 text-primary" />
+                                    <span>{userName}</span>
+                                    <Edit3 className="w-3 h-3 text-muted-foreground ml-1" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setShowNameModal(true)}
+                                    className="px-3.5 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-bold hover:bg-secondary/20 transition-all cursor-pointer"
+                                >
+                                    + Set Nama
+                                </button>
+                            )}
                         </div>
                     </CardHeader>
 
