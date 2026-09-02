@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
+import { appendChatHistory } from "@/lib/googleSheets";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
@@ -45,7 +46,10 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { messages } = await req.json();
+        const body = await req.json();
+        const { messages } = body;
+        // userId bersifat opsional — fallback ke "anonymous" jika tidak dikirim client
+        const userId: string = body.userId ?? "anonymous";
 
         // 1. Fetch data from Public Google Sheet
         let mitraDataText = "DATABASE MITRA TERBARU (Data Snapshot):\nGunakan data ini jika pengguna bertanya tentang status sertifikasi spesifik. Jika data tidak ditemukan, minta nomor pendaftaran.\n";
@@ -118,6 +122,17 @@ export async function POST(req: Request) {
         const text = response.text();
 
         if (!text) throw new Error("AI returned an empty response");
+
+        // Simpan ke Google Sheets secara fire-and-forget.
+        // Kegagalan logging TIDAK boleh menggagalkan respons chatbot ke user.
+        const lastUserMessage = messages[messages.length - 1]?.content ?? "";
+        appendChatHistory({
+            userId,
+            message: lastUserMessage,
+            response: text,
+        }).catch((err) => {
+            console.error("[GoogleSheets] Gagal menyimpan riwayat chat (non-fatal):", err?.message ?? err);
+        });
 
         return NextResponse.json({ text });
     } catch (error: any) {
