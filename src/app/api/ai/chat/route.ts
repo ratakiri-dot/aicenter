@@ -4,7 +4,7 @@ import Papa from "papaparse";
 import { appendChatHistory } from "@/lib/googleSheets";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
 const PUBLIC_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/13aFq17smTHLDvNEK7Tm6alIHRvNYYzh77ukRCe9oeTE/export?format=csv";
 const PUBLIC_DOC_TXT_URL = "https://docs.google.com/document/d/1JqbBEWC38N0W62WDzNMvb1MqStmz19EAmEEOnB1ddkc/export?format=txt";
@@ -51,51 +51,54 @@ export async function POST(req: Request) {
         // userId bersifat opsional — fallback ke "anonymous" jika tidak dikirim client
         const userId: string = body.userId ?? "anonymous";
 
-        // 1. Fetch data from Public Google Sheet
+        // Fetch Sheet & Doc secara paralel untuk menghemat waktu
         let mitraDataText = "DATABASE MITRA TERBARU (Data Snapshot):\nGunakan data ini jika pengguna bertanya tentang status sertifikasi spesifik. Jika data tidak ditemukan, minta nomor pendaftaran.\n";
-        try {
-            const sheetRes = await fetch(PUBLIC_SHEET_CSV_URL, { cache: "no-store" });
-            if (!sheetRes.ok) throw new Error(`HTTP ${sheetRes.status}`);
+        let docDataText = "";
 
-            const csvText = await sheetRes.text();
+        const [sheetResult, docResult] = await Promise.allSettled([
+            fetch(PUBLIC_SHEET_CSV_URL, { next: { revalidate: 300 } }),
+            fetch(PUBLIC_DOC_TXT_URL, { next: { revalidate: 300 } }),
+        ]);
 
-            // Parse CSV directly
-            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-
-            if (parsed.data && parsed.data.length > 0) {
-                parsed.data.forEach((row: any, index: number) => {
-                    const nama = row["NAMA"] || "Tanpa Nama";
-                    const merk = row["MERK"] || "Tanpa Merk";
-                    const status = row["STATUS PERMOHONAN"] || "Status Tidak Diketahui";
-                    // Match the exact column head "NO SERTIFIKASI HALAL" from the CSV
-                    const noSertifikat = row["NO SERTIFIKASI HALAL"] || row["NO SERTIFIKAT"] || "-";
-
-                    // Format output like the hardcoded string before
-                    mitraDataText += `${index + 1}. ${merk} (${nama}). Status: ${status}`;
-                    if (noSertifikat !== "-") {
-                        mitraDataText += ` (ID: ${noSertifikat})`;
-                    }
-                    mitraDataText += "\n";
-                });
-            } else {
-                mitraDataText += "Terjadi kesalahan saat membaca atau data kosong.\n";
+        // Proses hasil Sheet
+        if (sheetResult.status === "fulfilled" && sheetResult.value.ok) {
+            try {
+                const csvText = await sheetResult.value.text();
+                const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+                if (parsed.data && parsed.data.length > 0) {
+                    parsed.data.forEach((row: any, index: number) => {
+                        const nama = row["NAMA"] || "Tanpa Nama";
+                        const merk = row["MERK"] || "Tanpa Merk";
+                        const status = row["STATUS PERMOHONAN"] || "Status Tidak Diketahui";
+                        const noSertifikat = row["NO SERTIFIKASI HALAL"] || row["NO SERTIFIKAT"] || "-";
+                        mitraDataText += `${index + 1}. ${merk} (${nama}). Status: ${status}`;
+                        if (noSertifikat !== "-") mitraDataText += ` (ID: ${noSertifikat})`;
+                        mitraDataText += "\n";
+                    });
+                } else {
+                    mitraDataText += "Terjadi kesalahan saat membaca atau data kosong.\n";
+                }
+            } catch (e) {
+                console.error("Failed to parse Google Sheet CSV:", e);
+                mitraDataText += "[Peringatan: Gagal memproses database mitra]\n";
             }
-        } catch (error) {
-            console.error("Failed to fetch/parse from Google sheet:", error);
+        } else {
+            console.error("Failed to fetch Google Sheet:", sheetResult);
             mitraDataText += "[Peringatan: Gagal terhubung ke database mitra saat ini]\n";
         }
 
-        // 2. Fetch data from Public Google Doc
-        let docDataText = "";
-        try {
-            const docRes = await fetch(PUBLIC_DOC_TXT_URL, { cache: "no-store" });
-            if (!docRes.ok) throw new Error(`HTTP ${docRes.status}`);
-            let text = await docRes.text();
-            // Hilangkan BOM jika ada, dan trim
-            text = text.replace(/^\uFEFF/, '').trim();
-            docDataText = "\nREFERENSI MATERI (DARI GOOGLE DOCS):\n" + text + "\n";
-        } catch (error) {
-            console.error("Failed to fetch from Google Doc:", error);
+        // Proses hasil Doc
+        if (docResult.status === "fulfilled" && docResult.value.ok) {
+            try {
+                let text = await docResult.value.text();
+                text = text.replace(/^\uFEFF/, "").trim();
+                docDataText = "\nREFERENSI MATERI (DARI GOOGLE DOCS):\n" + text + "\n";
+            } catch (e) {
+                console.error("Failed to read Google Doc text:", e);
+                docDataText = "\n[Peringatan: Gagal memproses referensi dari Google Docs]\n";
+            }
+        } else {
+            console.error("Failed to fetch Google Doc:", docResult);
             docDataText = "\n[Peringatan: Gagal mengambil referensi tambahan dari Google Docs]\n";
         }
 
