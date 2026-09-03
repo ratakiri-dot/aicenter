@@ -4,9 +4,26 @@ import Papa from "papaparse";
 import { appendAnalysisHistory } from "@/lib/googleSheets";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
 const PUBLIC_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/13aFq17smTHLDvNEK7Tm6alIHRvNYYzh77ukRCe9oeTE/export?format=csv";
+
+// Fallback model list if primary model experiences 503 Service Unavailable spikes
+const CANDIDATE_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-flash-latest"];
+
+async function generateContentWithFallback(prompt: string) {
+    let lastError: any = null;
+    for (const modelName of CANDIDATE_MODELS) {
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            return response.text();
+        } catch (err: any) {
+            console.warn(`[Gemini Fallback] Model ${modelName} returned error: ${err.message}. Retrying next candidate...`);
+            lastError = err;
+        }
+    }
+    throw lastError || new Error("Seluruh model Gemini AI sedang sibuk. Silakan coba beberapa saat lagi.");
+}
 
 export async function POST(req: Request) {
     if (!process.env.GEMINI_API_KEY) {
@@ -78,9 +95,7 @@ export async function POST(req: Request) {
             Balas HANYA JSON murni.`;
         }
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const rawText = response.text();
+        const rawText = await generateContentWithFallback(prompt);
 
         // Robust JSON extraction
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -112,6 +127,10 @@ export async function POST(req: Request) {
         }
     } catch (error: any) {
         console.error("Halal Analysis Error:", error);
-        return NextResponse.json({ error: error.message || "Unknown AI error" }, { status: 500 });
+        return NextResponse.json({
+            error: error.message && error.message.includes("503")
+                ? "Layanan Gemini AI sedang mengalami lonjakan beban tinggi sementara dari Google. Silakan coba beberapa detik lagi."
+                : error.message || "Unknown AI error"
+        }, { status: 500 });
     }
 }
