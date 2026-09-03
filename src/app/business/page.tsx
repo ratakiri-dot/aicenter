@@ -23,7 +23,10 @@ import {
     Palette,
     FileText,
     Share2,
-    Phone
+    Phone,
+    UploadCloud,
+    Trash2,
+    Maximize2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +64,7 @@ export default function BusinessPage() {
     const [flyerHighlightsText, setFlyerHighlightsText] = useState("🌶️ Bumbu Rempah Alami\n📜 Sertifikat Halal LPH UNISMA\n📦 Siap Kirim Seluruh Indonesia");
     const [flyerTheme, setFlyerTheme] = useState<"bold" | "halal" | "minimal" | "sweet">("bold");
     const [flyerAspectRatio, setFlyerAspectRatio] = useState<"1:1" | "9:16">("1:1");
+    const [flyerImageStyle, setFlyerImageStyle] = useState<"card" | "banner" | "circle">("card");
     const [showHalalBadge, setShowHalalBadge] = useState(true);
     const [flyerImage, setFlyerImage] = useState<string | null>(null);
     const [isGeneratingFlyerAI, setIsGeneratingFlyerAI] = useState(false);
@@ -548,6 +552,90 @@ export default function BusinessPage() {
                                     </Button>
                                 </div>
 
+                                {/* Prominent Photo Upload Section */}
+                                <div className="p-4 rounded-2xl bg-muted/40 border-2 border-dashed border-rose-500/30 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-rose-600 flex items-center gap-1.5">
+                                            <Camera className="w-4 h-4 text-rose-500" /> Upload Foto Produk Flyer
+                                        </label>
+                                        {flyerImage && (
+                                            <button
+                                                onClick={() => setFlyerImage(null)}
+                                                className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center gap-1"
+                                            >
+                                                <Trash2 className="w-3 h-3" /> Hapus
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {flyerImage ? (
+                                        <div className="relative w-full h-36 rounded-xl overflow-hidden border border-border group shadow-md">
+                                            <img src={flyerImage} alt="Uploaded Flyer Product" className="w-full h-full object-cover" />
+                                            <label htmlFor="flyer-image-input" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold cursor-pointer gap-1.5">
+                                                <UploadCloud className="w-4 h-4" /> Ganti Foto Produk
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        <label
+                                            htmlFor="flyer-image-input"
+                                            className="w-full h-28 rounded-xl border border-input bg-background/80 hover:bg-rose-500/5 hover:border-rose-500/50 transition-all flex flex-col items-center justify-center text-center cursor-pointer p-3 gap-1.5 group"
+                                        >
+                                            <UploadCloud className="w-7 h-7 text-rose-500 group-hover:scale-110 transition-transform" />
+                                            <span className="text-xs font-bold text-primary">Klik untuk Pilih / Unggah Foto Produk</span>
+                                            <span className="text-[10px] text-muted-foreground font-medium">Format PNG, JPG, atau WEBP</span>
+                                        </label>
+                                    )}
+
+                                    <input
+                                        id="flyer-image-input"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFlyerImageUpload}
+                                    />
+
+                                    {/* Option to use generated photo from AI Studio if available */}
+                                    {generatedPhoto && (
+                                        <Button
+                                            onClick={() => setFlyerImage(generatedPhoto)}
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full text-xs font-bold text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 rounded-xl gap-1.5"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                                            Gunakan Hasil Foto AI Studio
+                                        </Button>
+                                    )}
+
+                                    {/* Image Layout Frame Picker */}
+                                    {flyerImage && (
+                                        <div className="space-y-1.5 pt-2 border-t border-border/50">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Tampilan Frame Foto</label>
+                                            <div className="flex gap-2">
+                                                {[
+                                                    { id: "card", label: "Kartu Studio" },
+                                                    { id: "banner", label: "Hero Banner" },
+                                                    { id: "circle", label: "Lingkaran Pop" },
+                                                ].map((s) => (
+                                                    <button
+                                                        key={s.id}
+                                                        onClick={() => setFlyerImageStyle(s.id as any)}
+                                                        className={cn(
+                                                            "flex-1 py-1 px-2 rounded-lg text-[10px] font-bold border transition-all",
+                                                            flyerImageStyle === s.id
+                                                                ? "bg-rose-500 text-white border-rose-500"
+                                                                : "bg-muted text-muted-foreground border-transparent hover:border-rose-500/20"
+                                                        )}
+                                                    >
+                                                        {s.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Form Input Controls */}
                                 <div className="space-y-4">
                                     <div className="space-y-1.5">
@@ -656,42 +744,18 @@ export default function BusinessPage() {
                                         </div>
                                     </div>
 
-                                    {/* Upload Foto Produk Flyer & Halal Badge Toggle */}
-                                    <div className="space-y-3 pt-2 border-t">
-                                        <div className="flex items-center justify-between">
-                                            <label htmlFor="flyer-image-upload" className="cursor-pointer inline-flex items-center text-xs font-bold text-rose-600 hover:text-rose-700">
-                                                <Camera className="w-3.5 h-3.5 mr-1.5" />
-                                                {flyerImage ? "Ganti Foto Gambar Flyer" : "Upload Gambar Produk (Opsional)"}
-                                            </label>
-                                            <input
-                                                id="flyer-image-upload"
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleFlyerImageUpload}
-                                            />
-                                            {flyerImage && (
-                                                <button
-                                                    onClick={() => setFlyerImage(null)}
-                                                    className="text-[10px] font-bold text-muted-foreground hover:text-red-500 underline"
-                                                >
-                                                    Hapus Foto
-                                                </button>
-                                            )}
+                                    {/* Halal Badge Toggle */}
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                            <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">Badge Halal LPH UNISMA</span>
                                         </div>
-
-                                        <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                                            <div className="flex items-center gap-2">
-                                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                                                <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">Badge Halal LPH UNISMA</span>
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                checked={showHalalBadge}
-                                                onChange={(e) => setShowHalalBadge(e.target.checked)}
-                                                className="w-4 h-4 accent-emerald-600 cursor-pointer"
-                                            />
-                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            checked={showHalalBadge}
+                                            onChange={(e) => setShowHalalBadge(e.target.checked)}
+                                            className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                                        />
                                     </div>
 
                                     {/* Preset Visual Selector */}
@@ -826,15 +890,24 @@ export default function BusinessPage() {
                                     <div className="relative z-10 my-4 space-y-4 flex-1 flex flex-col justify-center">
                                         {/* Product Photo insert if uploaded */}
                                         {flyerImage ? (
-                                            <div className="relative w-full h-44 md:h-52 rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl group">
+                                            <div className={cn(
+                                                "relative w-full overflow-hidden border-2 border-white/30 shadow-2xl transition-all duration-300",
+                                                flyerImageStyle === "card" && "h-44 md:h-52 rounded-2xl",
+                                                flyerImageStyle === "banner" && "h-48 md:h-56 rounded-3xl",
+                                                flyerImageStyle === "circle" && "w-36 h-36 md:w-44 md:h-44 rounded-full mx-auto border-4 shadow-rose-950/40"
+                                            )}>
                                                 <img src={flyerImage} alt="Flyer Product" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                                             </div>
                                         ) : (
-                                            <div className="w-full py-4 px-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-center space-y-1">
-                                                <ShoppingBag className="w-8 h-8 opacity-70 mb-1" />
-                                                <span className="text-xs font-black uppercase tracking-widest opacity-80">{flyerProductName || "NAMA PRODUK UMKM"}</span>
-                                            </div>
+                                            <label
+                                                htmlFor="flyer-image-input"
+                                                className="w-full py-6 px-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-center space-y-1.5 cursor-pointer hover:bg-white/20 transition-colors"
+                                            >
+                                                <UploadCloud className="w-8 h-8 opacity-80" />
+                                                <span className="text-xs font-black uppercase tracking-widest opacity-90">{flyerProductName || "NAMA PRODUK UMKM"}</span>
+                                                <span className="text-[10px] underline opacity-75">Klik untuk Upload Foto Produk</span>
+                                            </label>
                                         )}
 
                                         {/* Headline & Subheadline */}
@@ -932,7 +1005,7 @@ export default function BusinessPage() {
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black">Flyer Berdampak Tinggi</h3>
                             <p className="text-sm text-rose-100 leading-relaxed font-medium">
-                                Gunakan kombinasi warna kontras dan headline yang langsung menyebutkan benefit utama produk agar pembeli tertarik saat scroll media sosial.
+                                Gunakan kombinasi foto produk yang jernih, warna kontras, dan headline yang langsung menyebutkan benefit utama produk agar pembeli tertarik saat scroll media sosial.
                             </p>
                         </div>
                     </div>
