@@ -22,6 +22,8 @@ export default function SearchPage() {
         const savedName = localStorage.getItem("uni_chat_username");
         if (savedName) {
             setUserName(savedName);
+        } else {
+            setShowNameModal(true);
         }
     }, []);
 
@@ -32,16 +34,30 @@ export default function SearchPage() {
         localStorage.setItem("uni_chat_username", trimmed);
         setUserName(trimmed);
         setShowNameModal(false);
+
+        if (query.trim()) {
+            performSearch(trimmed);
+        }
     };
 
-    const handleSearch = async () => {
-        if (!query) return;
+    const handleSearch = () => {
+        if (!query.trim()) return;
+
+        const currentName = userName || (typeof window !== "undefined" && localStorage.getItem("uni_chat_username")) || "";
+        if (!currentName.trim()) {
+            setShowNameModal(true);
+            return;
+        }
+
+        performSearch(currentName);
+    };
+
+    const performSearch = async (currentUserId: string) => {
         setIsSearching(true);
         setResult(null);
         setError(null);
 
         try {
-            const currentUserId = userName || (typeof window !== "undefined" && localStorage.getItem("uni_chat_username")) || "anonymous";
             const res = await fetch("/api/ai/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -76,7 +92,7 @@ export default function SearchPage() {
                             </div>
                             <h3 className="text-2xl font-black text-primary">Identitas Pengguna</h3>
                             <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                                Masukkan nama Anda/usaha Anda untuk dicatat saat melakukan pencarian Bahan Kritis di Google Sheets.
+                                Silakan masukkan nama Anda atau nama usaha Anda untuk mencatat konsultasi & analisis Bahan Kritis di sistem LPH UNISMA.
                             </p>
                         </div>
                         <form onSubmit={handleSaveName} className="space-y-4">
@@ -85,23 +101,25 @@ export default function SearchPage() {
                                 placeholder="Contoh: Ahmad (Resto Padang Jaya)"
                                 value={nameInput}
                                 onChange={(e) => setNameInput(e.target.value)}
-                                className="h-14 rounded-xl border-2 border-primary/20 focus-visible:ring-primary px-4 text-sm"
+                                className="h-14 rounded-xl border-2 border-primary/20 focus-visible:ring-primary px-4 text-sm font-medium"
                             />
                             <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setShowNameModal(false)}
-                                    className="flex-1 h-12 rounded-xl text-xs font-bold"
-                                >
-                                    Batal
-                                </Button>
+                                {userName && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowNameModal(false)}
+                                        className="flex-1 h-12 rounded-xl text-xs font-bold"
+                                    >
+                                        Batal
+                                    </Button>
+                                )}
                                 <Button
                                     type="submit"
                                     disabled={!nameInput.trim()}
                                     className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs shadow-lg shadow-primary/20"
                                 >
-                                    Simpan Nama
+                                    Simpan & Lanjutkan
                                 </Button>
                             </div>
                         </form>
