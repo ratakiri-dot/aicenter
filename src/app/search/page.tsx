@@ -20,10 +20,11 @@ export default function SearchPage() {
         setError(null);
 
         try {
+            const userId = (typeof window !== "undefined" && localStorage.getItem("uni_chat_user_id")) || "anonymous";
             const res = await fetch("/api/ai/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query, mode: "analyze" }),
+                body: JSON.stringify({ query, mode: "analyze", userId }),
             });
             const data = await res.json();
 

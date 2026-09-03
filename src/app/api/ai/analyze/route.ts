@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
+import { appendAnalysisHistory } from "@/lib/googleSheets";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
@@ -13,7 +14,9 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { query, mode } = await req.json();
+        const body = await req.json();
+        const { query, mode } = body;
+        const userId: string = body.userId ?? "anonymous";
 
         let prompt = "";
         if (mode === "id-check") {
@@ -85,6 +88,20 @@ export async function POST(req: Request) {
 
         try {
             const jsonOutput = JSON.parse(text);
+
+            // Simpan riwayat analisis ke Google Sheets secara aman
+            try {
+                await appendAnalysisHistory({
+                    userId,
+                    query,
+                    mode: mode || "analyze",
+                    status: jsonOutput.status || "unknown",
+                    analysis: jsonOutput.analysis || jsonOutput.recommendation || text,
+                });
+            } catch (sheetErr: any) {
+                console.error("[GoogleSheets] Gagal menyimpan riwayat analisis:", sheetErr?.message || sheetErr);
+            }
+
             return NextResponse.json(jsonOutput);
         } catch (parseError) {
             console.error("Failed to parse Gemini response as JSON:", rawText);

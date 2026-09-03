@@ -59,6 +59,14 @@ export interface AppendChatParams {
   response: string;
 }
 
+export interface AppendAnalysisParams {
+  userId?: string;
+  query: string;
+  mode?: string;
+  status: string;
+  analysis: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // appendChatHistory
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,6 +97,59 @@ export async function appendChatHistory({
       values: [[timestamp, userId, message, response]],
     },
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// appendAnalysisHistory
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Menambahkan satu baris baru analisis bahan kritis / pencarian ID halal ke Google Sheet:
+ * Tab: "BahanKritis!A:F"
+ * Kolom: | Timestamp | User ID | Mode | Nama Bahan / Query | Status | Hasil Analisis |
+ *
+ * Jika tab "BahanKritis" belum dibuat, sistem otomatis menulis ke tab "ChatHistory" sebagai fallback.
+ */
+export async function appendAnalysisHistory({
+  userId = "anonymous",
+  query,
+  mode = "analyze",
+  status,
+  analysis,
+}: AppendAnalysisParams): Promise<void> {
+  const { sheets, sheetId } = getSheetsClient();
+  const timestamp = new Date().toISOString();
+
+  try {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: sheetId,
+      range: "BahanKritis!A:F",
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[timestamp, userId, mode, query, status, analysis]],
+      },
+    });
+  } catch (err: any) {
+    console.warn(
+      "[GoogleSheets] Gagal menulis ke tab 'BahanKritis', beralih ke tab 'ChatHistory':",
+      err?.message || err
+    );
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: sheetId,
+      range: "ChatHistory!A:D",
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [
+          [
+            timestamp,
+            userId,
+            `[Analisis Bahan (${mode})] ${query}`,
+            `[Status: ${status}] ${analysis}`,
+          ],
+        ],
+      },
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
