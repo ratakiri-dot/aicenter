@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Sparkles,
@@ -15,7 +15,15 @@ import {
     BrainCircuit,
     Wand2,
     Image as ImageIcon,
-    Layout
+    Layout,
+    LayoutTemplate,
+    CheckCircle2,
+    ShieldCheck,
+    Tag,
+    Palette,
+    FileText,
+    Share2,
+    Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +48,25 @@ export default function BusinessPage() {
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+    // Flyer AI & Customizer State
+    const flyerRef = useRef<HTMLDivElement>(null);
+    const [flyerProductName, setFlyerProductName] = useState("Keripik Tempe Halal UNISMA");
+    const [flyerHeadline, setFlyerHeadline] = useState("KRENYEZNYA BIKIN KETAGIHAN!");
+    const [flyerSubheadline, setFlyerSubheadline] = useState("Camilan Renyah Alami 100% Halal & Tanpa Pengawet");
+    const [flyerOriginalPrice, setFlyerOriginalPrice] = useState("Rp 25.000");
+    const [flyerPromoPrice, setFlyerPromoPrice] = useState("Rp 18.000");
+    const [flyerBadgeText, setFlyerBadgeText] = useState("PROMO HEMAT 28%");
+    const [flyerWhatsapp, setFlyerWhatsapp] = useState("0812-3456-7890");
+    const [flyerInstagram, setFlyerInstagram] = useState("@tempe.unisma.halal");
+    const [flyerHighlightsText, setFlyerHighlightsText] = useState("🌶️ Bumbu Rempah Alami\n📜 Sertifikat Halal LPH UNISMA\n📦 Siap Kirim Seluruh Indonesia");
+    const [flyerTheme, setFlyerTheme] = useState<"bold" | "halal" | "minimal" | "sweet">("bold");
+    const [flyerAspectRatio, setFlyerAspectRatio] = useState<"1:1" | "9:16">("1:1");
+    const [showHalalBadge, setShowHalalBadge] = useState(true);
+    const [flyerImage, setFlyerImage] = useState<string | null>(null);
+    const [isGeneratingFlyerAI, setIsGeneratingFlyerAI] = useState(false);
+    const [isExportingFlyer, setIsExportingFlyer] = useState(false);
+
+    // Copywriting Handlers
     const handleGenerateCopy = async () => {
         if (!productName) return;
         setIsGeneratingCopy(true);
@@ -54,12 +81,12 @@ export default function BusinessPage() {
             setGeneratedCopy(data);
         } catch (error) {
             console.error("Copywriting Error:", error);
-            // Fallback content or error message
         } finally {
             setIsGeneratingCopy(false);
         }
     };
 
+    // Photo Handlers
     const handleGeneratePhoto = async () => {
         if (!photoPrompt) return;
         setIsGeneratingPhoto(true);
@@ -143,10 +170,79 @@ export default function BusinessPage() {
         }
     };
 
+    // Flyer AI Handlers
+    const handleGenerateFlyerAI = async () => {
+        setIsGeneratingFlyerAI(true);
+        try {
+            const res = await fetch("/api/ai/flyer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    productName: flyerProductName || productName,
+                    productDescription: features || flyerSubheadline,
+                    promoText: flyerBadgeText,
+                    style: flyerTheme
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            if (data.headline) setFlyerHeadline(data.headline);
+            if (data.subheadline) setFlyerSubheadline(data.subheadline);
+            if (data.badgeText) setFlyerBadgeText(data.badgeText);
+            if (data.highlights && Array.isArray(data.highlights)) {
+                setFlyerHighlightsText(data.highlights.join("\n"));
+            }
+        } catch (error: any) {
+            console.error("Flyer AI Error:", error);
+            alert("Gagal menggenerasi teks flyer: " + error.message);
+        } finally {
+            setIsGeneratingFlyerAI(false);
+        }
+    };
+
+    const handleFlyerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFlyerImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleDownloadFlyer = async () => {
+        if (!flyerRef.current) return;
+        setIsExportingFlyer(true);
+        try {
+            const { toPng } = await import("html-to-image");
+            const dataUrl = await toPng(flyerRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                quality: 0.95
+            });
+            const link = document.createElement("a");
+            link.download = `flyer-${(flyerProductName || "produk").toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (error) {
+            console.error("Export Flyer Error:", error);
+            alert("Gagal mengunduh flyer. Pastikan foto pendukung berformat valid.");
+        } finally {
+            setIsExportingFlyer(false);
+        }
+    };
+
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Could add a toast here
     };
+
+    // Helper highlights array
+    const flyerHighlightsList = flyerHighlightsText
+        .split("\n")
+        .map(s => s.trim())
+        .filter(Boolean);
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -161,13 +257,13 @@ export default function BusinessPage() {
                     <span className="text-rose-500">with Creative AI</span>
                 </h1>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
-                    Tingkatkan penjualan produk halal Anda dengan bantuan AI LPH UNISMA. Buat iklan menarik dan foto produk profesional dalam hitungan detik.
+                    Tingkatkan penjualan produk halal Anda dengan bantuan AI LPH UNISMA. Buat iklan menarik, foto produk profesional, dan flyer jualan estetik dalam hitungan detik.
                 </p>
             </div>
 
             <Tabs defaultValue="copywriting" className="w-full">
                 <div className="flex justify-center mb-8">
-                    <TabsList className="bg-muted p-1 rounded-2xl h-14 w-full max-w-md border shadow-inner">
+                    <TabsList className="bg-muted p-1 rounded-2xl h-14 w-full max-w-xl border shadow-inner">
                         <TabsTrigger
                             value="copywriting"
                             className="rounded-xl font-black text-sm data-[state=active]:bg-white data-[state=active]:text-rose-500 data-[state=active]:shadow-sm flex-1 gap-2"
@@ -181,6 +277,13 @@ export default function BusinessPage() {
                         >
                             <Camera className="w-4 h-4" />
                             AI Product Photo
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="flyer"
+                            className="rounded-xl font-black text-sm data-[state=active]:bg-white data-[state=active]:text-rose-500 data-[state=active]:shadow-sm flex-1 gap-2"
+                        >
+                            <LayoutTemplate className="w-4 h-4" />
+                            Desain Flyer AI
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -421,6 +524,387 @@ export default function BusinessPage() {
                         </div>
                     </div>
                 </TabsContent>
+
+                {/* AI Flyer Generator Tab */}
+                <TabsContent value="flyer" className="space-y-8 outline-none">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Left Control Panel (5 cols) */}
+                        <Card className="lg:col-span-5 border-none shadow-2xl rounded-[2.5rem] bg-white dark:bg-card overflow-hidden">
+                            <div className="h-2 w-full bg-rose-500" />
+                            <CardContent className="p-6 md:p-8 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-xl font-black tracking-tight text-primary flex items-center gap-2">
+                                        <Palette className="w-5 h-5 text-rose-500" />
+                                        Studio Flyer Jualan
+                                    </h2>
+                                    <Button
+                                        onClick={handleGenerateFlyerAI}
+                                        disabled={isGeneratingFlyerAI}
+                                        size="sm"
+                                        className="rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white font-bold border border-rose-500/20 text-xs gap-1.5 transition-all"
+                                    >
+                                        {isGeneratingFlyerAI ? <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-rose-500" />}
+                                        AI Magic Content
+                                    </Button>
+                                </div>
+
+                                {/* Form Input Controls */}
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-1.5">
+                                            <ShoppingBag className="w-3.5 h-3.5" /> Nama Produk
+                                        </label>
+                                        <Input
+                                            placeholder="Contoh: Keripik Tempe Halal"
+                                            className="h-11 rounded-xl font-medium"
+                                            value={flyerProductName}
+                                            onChange={(e) => setFlyerProductName(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-1.5">
+                                            <FileText className="w-3.5 h-3.5" /> Headline Promo
+                                        </label>
+                                        <Input
+                                            placeholder="Contoh: SENSASI PEDAS MANTAP!"
+                                            className="h-11 rounded-xl font-medium"
+                                            value={flyerHeadline}
+                                            onChange={(e) => setFlyerHeadline(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-1.5">
+                                            Sub-headline / Tagline
+                                        </label>
+                                        <Input
+                                            placeholder="Contoh: Olahan kedelai lokal 100% Halal"
+                                            className="h-11 rounded-xl font-medium"
+                                            value={flyerSubheadline}
+                                            onChange={(e) => setFlyerSubheadline(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Price & Badge */}
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Harga Normal</label>
+                                            <Input
+                                                placeholder="Rp 25.000"
+                                                className="h-10 rounded-xl text-xs"
+                                                value={flyerOriginalPrice}
+                                                onChange={(e) => setFlyerOriginalPrice(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-rose-500">Harga Promo</label>
+                                            <Input
+                                                placeholder="Rp 18.000"
+                                                className="h-10 rounded-xl text-xs font-bold border-rose-500/40 text-rose-600"
+                                                value={flyerPromoPrice}
+                                                onChange={(e) => setFlyerPromoPrice(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Badge Promo</label>
+                                            <Input
+                                                placeholder="DISKON 20%"
+                                                className="h-10 rounded-xl text-xs"
+                                                value={flyerBadgeText}
+                                                onChange={(e) => setFlyerBadgeText(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Highlights */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-1.5">
+                                            <Tag className="w-3.5 h-3.5" /> Poin Keunggulan (1 baris per poin)
+                                        </label>
+                                        <Textarea
+                                            placeholder="🌶️ Bumbu Rempah Alami&#10;📜 Sertifikat Halal LPH UNISMA&#10;📦 Siap Kirim Seluruh Indonesia"
+                                            className="min-h-[85px] rounded-xl text-xs font-medium"
+                                            value={flyerHighlightsText}
+                                            onChange={(e) => setFlyerHighlightsText(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Contacts */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                                <Phone className="w-3 h-3 text-green-500" /> WhatsApp
+                                            </label>
+                                            <Input
+                                                placeholder="0812-xxxx-xxxx"
+                                                className="h-10 rounded-xl text-xs"
+                                                value={flyerWhatsapp}
+                                                onChange={(e) => setFlyerWhatsapp(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                                <Instagram className="w-3 h-3 text-pink-500" /> Instagram
+                                            </label>
+                                            <Input
+                                                placeholder="@nama.toko"
+                                                className="h-10 rounded-xl text-xs"
+                                                value={flyerInstagram}
+                                                onChange={(e) => setFlyerInstagram(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Upload Foto Produk Flyer & Halal Badge Toggle */}
+                                    <div className="space-y-3 pt-2 border-t">
+                                        <div className="flex items-center justify-between">
+                                            <label htmlFor="flyer-image-upload" className="cursor-pointer inline-flex items-center text-xs font-bold text-rose-600 hover:text-rose-700">
+                                                <Camera className="w-3.5 h-3.5 mr-1.5" />
+                                                {flyerImage ? "Ganti Foto Gambar Flyer" : "Upload Gambar Produk (Opsional)"}
+                                            </label>
+                                            <input
+                                                id="flyer-image-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleFlyerImageUpload}
+                                            />
+                                            {flyerImage && (
+                                                <button
+                                                    onClick={() => setFlyerImage(null)}
+                                                    className="text-[10px] font-bold text-muted-foreground hover:text-red-500 underline"
+                                                >
+                                                    Hapus Foto
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                                <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">Badge Halal LPH UNISMA</span>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={showHalalBadge}
+                                                onChange={(e) => setShowHalalBadge(e.target.checked)}
+                                                className="w-4 h-4 accent-emerald-600 cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Preset Visual Selector */}
+                                    <div className="space-y-2 pt-2 border-t">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                                            Pilih Tema Visual Flyer
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { id: "bold", name: "🔴 Flash Sale Bold", color: "from-red-600 to-amber-500" },
+                                                { id: "halal", name: "🌿 Halal Culinary", color: "from-emerald-900 to-teal-800" },
+                                                { id: "minimal", name: "☕ Modern Luxury", color: "from-slate-900 to-zinc-900" },
+                                                { id: "sweet", name: "🍊 Sweet & Fun", color: "from-rose-500 to-amber-400" },
+                                            ].map((t) => (
+                                                <button
+                                                    key={t.id}
+                                                    onClick={() => setFlyerTheme(t.id as any)}
+                                                    className={cn(
+                                                        "p-3 rounded-xl border text-left text-xs font-bold transition-all relative overflow-hidden flex items-center justify-between",
+                                                        flyerTheme === t.id
+                                                            ? "border-rose-500 bg-rose-500/10 text-rose-600 ring-2 ring-rose-500/20"
+                                                            : "border-border hover:border-rose-500/40 text-muted-foreground"
+                                                    )}
+                                                >
+                                                    <span>{t.name}</span>
+                                                    <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br", t.color)} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Aspect Ratio Selector */}
+                                    <div className="space-y-2 pt-2 border-t">
+                                        <label className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                                            Ukuran Poster (Format)
+                                        </label>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setFlyerAspectRatio("1:1")}
+                                                className={cn(
+                                                    "flex-1 py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-2",
+                                                    flyerAspectRatio === "1:1" ? "bg-rose-500 text-white border-rose-500" : "bg-muted text-muted-foreground border-transparent"
+                                                )}
+                                            >
+                                                <div className="w-3.5 h-3.5 border-2 border-current rounded-sm" />
+                                                1:1 Feed Post
+                                            </button>
+                                            <button
+                                                onClick={() => setFlyerAspectRatio("9:16")}
+                                                className={cn(
+                                                    "flex-1 py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-2",
+                                                    flyerAspectRatio === "9:16" ? "bg-rose-500 text-white border-rose-500" : "bg-muted text-muted-foreground border-transparent"
+                                                )}
+                                            >
+                                                <div className="w-2.5 h-4 border-2 border-current rounded-sm" />
+                                                9:16 Story / WA
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Download Button */}
+                                <Button
+                                    onClick={handleDownloadFlyer}
+                                    disabled={isExportingFlyer}
+                                    className="w-full h-14 rounded-2xl bg-rose-500 hover:bg-rose-600 shadow-xl shadow-rose-500/30 text-lg font-black gap-2 mt-4"
+                                >
+                                    {isExportingFlyer ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                                    Download Flyer HD (PNG)
+                                </Button>
+                            </CardContent>
+                        </Card>
+
+                        {/* Right Studio Live Flyer Canvas (7 cols) */}
+                        <div className="lg:col-span-7 space-y-4 flex flex-col items-center">
+                            <div className="w-full flex items-center justify-between px-2">
+                                <div className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-rose-500" />
+                                    Live Canvas Studio ({flyerAspectRatio})
+                                </div>
+                                <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
+                                    Siap Download PNG HD
+                                </span>
+                            </div>
+
+                            {/* Flyer Live Canvas Box */}
+                            <div className="w-full flex justify-center overflow-auto p-2">
+                                <div
+                                    ref={flyerRef}
+                                    className={cn(
+                                        "relative overflow-hidden shadow-2xl transition-all duration-500 flex flex-col justify-between p-6 md:p-8 rounded-[2rem]",
+                                        flyerAspectRatio === "1:1" ? "w-full max-w-[480px] aspect-square" : "w-full max-w-[420px] aspect-[9/16]",
+                                        flyerTheme === "bold" && "bg-gradient-to-br from-red-600 via-rose-700 to-amber-600 text-white",
+                                        flyerTheme === "halal" && "bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-900 text-amber-100",
+                                        flyerTheme === "minimal" && "bg-gradient-to-br from-slate-950 via-zinc-900 to-slate-900 text-white",
+                                        flyerTheme === "sweet" && "bg-gradient-to-br from-rose-500 via-orange-500 to-amber-400 text-white"
+                                    )}
+                                >
+                                    {/* Ambient Decorative Shapes */}
+                                    <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 blur-3xl rounded-full pointer-events-none" />
+                                    <div className="absolute bottom-0 left-0 w-56 h-56 bg-black/20 blur-2xl rounded-full pointer-events-none" />
+
+                                    {/* Header Bar: Halal Seal & Promo Badge */}
+                                    <div className="relative z-10 flex items-start justify-between gap-4">
+                                        {/* Halal Official Badge */}
+                                        {showHalalBadge ? (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 shadow-lg">
+                                                <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider leading-none text-white">
+                                                    LPH UNISMA HALAL VERIFIED
+                                                </span>
+                                            </div>
+                                        ) : <div />}
+
+                                        {/* Promo Discount Pill */}
+                                        {flyerBadgeText && (
+                                            <div className={cn(
+                                                "px-3.5 py-1.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl border animate-bounce",
+                                                flyerTheme === "bold" && "bg-yellow-400 text-red-950 border-yellow-300",
+                                                flyerTheme === "halal" && "bg-amber-400 text-emerald-950 border-amber-300",
+                                                flyerTheme === "minimal" && "bg-rose-500 text-white border-rose-400",
+                                                flyerTheme === "sweet" && "bg-white text-rose-600 border-white"
+                                            )}>
+                                                {flyerBadgeText}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Center Body Content */}
+                                    <div className="relative z-10 my-4 space-y-4 flex-1 flex flex-col justify-center">
+                                        {/* Product Photo insert if uploaded */}
+                                        {flyerImage ? (
+                                            <div className="relative w-full h-44 md:h-52 rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl group">
+                                                <img src={flyerImage} alt="Flyer Product" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-full py-4 px-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-center space-y-1">
+                                                <ShoppingBag className="w-8 h-8 opacity-70 mb-1" />
+                                                <span className="text-xs font-black uppercase tracking-widest opacity-80">{flyerProductName || "NAMA PRODUK UMKM"}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Headline & Subheadline */}
+                                        <div className="space-y-1 text-center">
+                                            <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight uppercase drop-shadow-md">
+                                                {flyerHeadline || "PROMO SPESIAL HALAL"}
+                                            </h2>
+                                            <p className="text-xs md:text-sm font-medium opacity-90 leading-relaxed max-w-sm mx-auto">
+                                                {flyerSubheadline}
+                                            </p>
+                                        </div>
+
+                                        {/* Highlights list */}
+                                        {flyerHighlightsList.length > 0 && (
+                                            <div className="bg-black/20 backdrop-blur-sm rounded-xl p-3 space-y-1.5 border border-white/10 text-xs">
+                                                {flyerHighlightsList.map((hl, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2 font-semibold">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                                                        <span className="truncate">{hl}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Footer: Price Tag & Contact CTA */}
+                                    <div className="relative z-10 space-y-3 pt-3 border-t border-white/20">
+                                        <div className="flex items-center justify-between">
+                                            {/* Price Section */}
+                                            <div className="flex items-baseline gap-2">
+                                                {flyerOriginalPrice && (
+                                                    <span className="text-xs font-bold line-through opacity-60">
+                                                        {flyerOriginalPrice}
+                                                    </span>
+                                                )}
+                                                {flyerPromoPrice && (
+                                                    <span className="text-2xl font-black text-amber-300 drop-shadow">
+                                                        {flyerPromoPrice}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* CTA Button Badge */}
+                                            <div className="px-3 py-1.5 rounded-lg bg-white text-black font-black text-[11px] uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+                                                <ShoppingBag className="w-3.5 h-3.5 text-rose-600" />
+                                                Pesan Sekarang
+                                            </div>
+                                        </div>
+
+                                        {/* Contact Footer Pills */}
+                                        <div className="flex items-center justify-between text-[10px] font-bold opacity-90 pt-1">
+                                            {flyerWhatsapp && (
+                                                <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full border border-white/15">
+                                                    <Phone className="w-3 h-3 text-green-400" />
+                                                    <span>{flyerWhatsapp}</span>
+                                                </div>
+                                            )}
+                                            {flyerInstagram && (
+                                                <div className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full border border-white/15">
+                                                    <Instagram className="w-3 h-3 text-pink-400" />
+                                                    <span>{flyerInstagram}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </TabsContent>
             </Tabs>
 
             {/* AI Tips Section */}
@@ -434,7 +918,7 @@ export default function BusinessPage() {
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black">Tips AI Selling</h3>
                             <p className="text-sm text-gray-400 leading-relaxed">
-                                Selalu sebutkan **"Sertifikasi Halal"** di bagian awal copywriting untuk membangun kepercayaan (Trust) instan pada pasar Muslim.
+                                Selalu sebutkan **"Sertifikasi Halal"** di bagian awal copywriting dan pasang Badge Halal pada flyer untuk membangun kepercayaan (Trust) instan pada konsumen.
                             </p>
                         </div>
                     </div>
@@ -446,9 +930,9 @@ export default function BusinessPage() {
                             <ImageIcon className="w-8 h-8" />
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-black">Visual Terbaik</h3>
+                            <h3 className="text-2xl font-black">Flyer Berdampak Tinggi</h3>
                             <p className="text-sm text-rose-100 leading-relaxed font-medium">
-                                Gunakan latar belakang yang bersih dan minimalis dalam deskripsi foto agar produk utama tetap menjadi perhatian utama mata pembeli.
+                                Gunakan kombinasi warna kontras dan headline yang langsung menyebutkan benefit utama produk agar pembeli tertarik saat scroll media sosial.
                             </p>
                         </div>
                     </div>

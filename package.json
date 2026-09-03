@@ -21,6 +21,7 @@
     "dotenv": "^17.2.3",
     "framer-motion": "^12.25.0",
     "googleapis": "^178.0.0",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "papaparse": "^5.5.3",
