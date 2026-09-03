@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Sparkles, CheckCircle2, AlertTriangle, BrainCircuit, History, ShieldEllipsis, Microscope, Calendar } from "lucide-react";
+import { Search, Sparkles, CheckCircle2, AlertTriangle, BrainCircuit, History, ShieldEllipsis, Microscope, Calendar, User, Edit3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,27 @@ export default function SearchPage() {
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Synchronized User Identity State (matching Chatbot page)
+    const [userName, setUserName] = useState<string>("");
+    const [nameInput, setNameInput] = useState<string>("");
+    const [showNameModal, setShowNameModal] = useState<boolean>(false);
+
+    useEffect(() => {
+        const savedName = localStorage.getItem("uni_chat_username");
+        if (savedName) {
+            setUserName(savedName);
+        }
+    }, []);
+
+    const handleSaveName = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const trimmed = nameInput.trim();
+        if (!trimmed) return;
+        localStorage.setItem("uni_chat_username", trimmed);
+        setUserName(trimmed);
+        setShowNameModal(false);
+    };
+
     const handleSearch = async () => {
         if (!query) return;
         setIsSearching(true);
@@ -20,11 +41,11 @@ export default function SearchPage() {
         setError(null);
 
         try {
-            const userId = (typeof window !== "undefined" && localStorage.getItem("uni_chat_user_id")) || "anonymous";
+            const currentUserId = userName || (typeof window !== "undefined" && localStorage.getItem("uni_chat_username")) || "anonymous";
             const res = await fetch("/api/ai/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query, mode: "analyze", userId }),
+                body: JSON.stringify({ query, mode: "analyze", userId: currentUserId }),
             });
             const data = await res.json();
 
@@ -44,9 +65,81 @@ export default function SearchPage() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+            {/* Modal Identitas Pengguna */}
+            {showNameModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-card p-8 rounded-3xl max-w-md w-full shadow-2xl border border-primary/10 space-y-6 animate-in zoom-in-95 duration-300">
+                        <div className="text-center space-y-2">
+                            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
+                                <User className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-2xl font-black text-primary">Identitas Pengguna</h3>
+                            <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                                Masukkan nama Anda/usaha Anda untuk dicatat saat melakukan pencarian Bahan Kritis di Google Sheets.
+                            </p>
+                        </div>
+                        <form onSubmit={handleSaveName} className="space-y-4">
+                            <Input
+                                autoFocus
+                                placeholder="Contoh: Ahmad (Resto Padang Jaya)"
+                                value={nameInput}
+                                onChange={(e) => setNameInput(e.target.value)}
+                                className="h-14 rounded-xl border-2 border-primary/20 focus-visible:ring-primary px-4 text-sm"
+                            />
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowNameModal(false)}
+                                    className="flex-1 h-12 rounded-xl text-xs font-bold"
+                                >
+                                    Batal
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={!nameInput.trim()}
+                                    className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs shadow-lg shadow-primary/20"
+                                >
+                                    Simpan Nama
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4 relative">
+                {/* User Identity Pill Button (Top Right) */}
+                <div className="flex justify-center md:absolute md:top-0 md:right-0">
+                    {userName ? (
+                        <button
+                            onClick={() => {
+                                setNameInput(userName);
+                                setShowNameModal(true);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold hover:bg-primary/20 transition-all cursor-pointer shadow-sm"
+                            title="Klik untuk mengubah nama pencatat"
+                        >
+                            <User className="w-4 h-4 text-primary" />
+                            <span>{userName}</span>
+                            <Edit3 className="w-3 h-3 text-muted-foreground ml-1" />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                setNameInput("");
+                                setShowNameModal(true);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-bold hover:bg-secondary/20 transition-all cursor-pointer shadow-sm"
+                        >
+                            <User className="w-4 h-4 text-secondary" />
+                            <span>+ Set Nama Pengguna</span>
+                        </button>
+                    )}
+                </div>
+
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
                     <BrainCircuit className="w-4 h-4" />
                     Powered by UNI-Intelligence
